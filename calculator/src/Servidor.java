@@ -1,4 +1,4 @@
-package servidor;
+package src;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -18,7 +18,9 @@ public class Servidor {
 		}
 
 		for (int i = 0; i < numThreads; i++) {
-			new ClienteServerHandler(server, i).start();
+			ClienteServerHandler serverHandler = new ClienteServerHandler(server, i);
+			System.out.println(serverHandler.getName() + " iniciando...");
+			serverHandler.start();
 		}
 	}
 

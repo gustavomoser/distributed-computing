@@ -1,4 +1,4 @@
-package servidor;
+package src;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -6,8 +6,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-
-import utils.Operadores;
 
 public class ClienteServerHandler extends Thread {
 
@@ -26,20 +24,20 @@ public class ClienteServerHandler extends Thread {
 	public void run() {
 		while (true) {
 			try {
-				System.out.println("A " + this.getName() + " está esperado...");
+				System.out.println(this.getName() + " está esperado...");
 
 				synchronized(this.server) {
 					this.client = this.server.accept();
 				}
 
-				System.out.println("A " + this.getName() + " iniciou - IP=" + this.client.getInetAddress());
+				System.out.println(this.getName() + " iniciou | IP: " + this.client.getInetAddress());
 
 				DataInputStream input = new DataInputStream(this.client.getInputStream());
 				DataOutputStream output = new DataOutputStream(this.client.getOutputStream());
 
 				while (true) {
 					String operation = input.readUTF();
-
+					
 					if (operation.equals(SAIR)) {
 						break;
 					} else {
@@ -73,7 +71,7 @@ public class ClienteServerHandler extends Thread {
 			} catch (EOFException e) {
 				try {
 					this.client.close();
-					System.out.println("Operação finalizada!");
+					System.out.println("Operação na " + this.getName() + " foi finalizada!");
 				} catch (IOException ioe) {
 					System.out.println(this.getName() + ": Erro ao fechar conexão com socket - " + ioe);
 				}

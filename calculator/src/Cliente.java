@@ -1,12 +1,10 @@
-package cliente;
+package src;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.Scanner;
-
-import utils.Operadores;
 
 public class Cliente {
 
@@ -15,6 +13,7 @@ public class Cliente {
 	public static final String SAIR = "sair";
 
 	public Cliente(String hostname, int porta) {
+		System.out.println("Calculadora iniciada!");
 		try {
 			Socket socket = new Socket(hostname, porta);
 
@@ -32,7 +31,7 @@ public class Cliente {
 					Operadores operator = this.getOperation(operation);
 
 					if (operator == null) {
-						System.out.println("Invalid operator!");
+						System.out.println("Operador inválido!");
 					} else {
 						String[] numbers;
 						switch (operator) {
