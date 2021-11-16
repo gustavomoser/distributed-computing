@@ -1,4 +1,4 @@
-# Calculator using Socket
+# Calculator using Sockets
 
 This project is an implementation of a **Client Server** Calculator using **Sockets**.
 
