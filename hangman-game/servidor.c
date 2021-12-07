@@ -13,12 +13,11 @@
 #define SOCKET_ERROR (-1)
 #define NUM_BODY_PIECES 5
 
-char *words[8] = {"computador", "paralela", "distribuida", "concorrencia", "servidor", "cliente", "ciencia", "computacao" };
-char *body_pieces[5] = {"Cabeça", "Braços", "Tronco", "Pernas", "Pés"};
+char *words[8] = {"computador\0", "paralela\0", "distribuida\0", "concorrencia\0", "servidor\0", "cliente\0", "ciencia\0", "computacao\0" };
+char *body_pieces[5] = {"cabeca\0", "bracos\0", "tronco\0", "pernas\0", "pes\0"};
 
 int validate(int exp, const char *message);
 void handle_connection(int client_socket);
-void init_underscored(char* underscored, char* word, int size);
 
 int main() {
   int server_socket, client_socket, client_addr_size;
@@ -51,83 +50,86 @@ void handle_connection(int client_socket) {
   printf("[+]Escolhendo palavra...\n");
   srandom(time(NULL));
   char* word = words[random() % 8];
+  int word_size = strlen(word);
+  
+  char underscored[word_size];
+
+  for (int i = 0; i < word_size; i++) {
+    underscored[i] = '0';
+  }
   
   printf("[+]Palavra escolhida: %s\n", word);
-  int word_len = strlen(word);
-  char underscored[word_len];
-  init_underscored(underscored, word, word_len);
-  
+  char read_ch;
   int game_piece_count = 0;
-  char* game_pieces;
-  char ch;
+  char game_pieces[1024];
+  int zeros_remaining = word_size;
+  int found = 0;
+  int ganhou = 0;
 
   while (1) {
-    write(client_socket, underscored, strlen(underscored));
-    read(client_socket, &ch, 1);
+    int v = 0;
+    send(client_socket, &underscored, word_size, 0);
+    validate(recv(client_socket, &v, 1, 0), "[-]Erro em recv\n");
+    
+    send(client_socket, &game_pieces, sizeof(char) * 1024, 0);
+    validate(recv(client_socket, &v, 1, 0), "[-]Erro em recv\n");
+    
+    validate(recv(client_socket, &read_ch, sizeof(char), 0), "[-]Erro em recv\n");
 
-    printf("[+] Caractere lido: %s", ch);
-
-    int found = 0;
-    for (int i = 0; i < word_len; i++) {
+    found = 0;
+    int used_letter = 0;
+    for (int i = 0; i < word_size; i++) {
       char pos = word[i];
-      if (pos == ch) {
-        found++;
-        underscored[i] = pos;
+      if (pos == read_ch) {
+        if (underscored[i] != '0') {
+          used_letter++;
+        } else {
+          found++;
+          underscored[i] = pos;
+          zeros_remaining--;
+        }
       }
     }
 
-    if (found <= 0) {
+    if (found <= 0 && used_letter == 0) {
       game_piece_count++;
-      if (game_piece_count == NUM_BODY_PIECES) {
-        write(client_socket, "Perdeu", strlen("Perdeu"));
-        break;
-      }
 
+      memset(game_pieces, 0, sizeof(game_pieces));
       for(int i = 0; i < game_piece_count; i++) {
-        if (game_piece_count > 1 && game_piece_count < 5) {
+        if (i == 0) {
+          strcat(game_pieces, body_pieces[i]);
+        } else {
           char separator[3] = ", ";
           strcat(game_pieces, separator);
           strcat(game_pieces, body_pieces[i]);
-        } else {
-          strcat(game_pieces, body_pieces[i]);
         }
       }
-      write(client_socket, game_pieces, strlen(game_pieces));
+      
+      if (game_piece_count == NUM_BODY_PIECES) break;
     }
 
-    int underscore_remaining = 0;
-    for (int i = 0; i < word_len; i++) {
-      char pos = underscored[i];
-      if (pos == '_') {
-        underscore_remaining++;
-      }
-    }
-
-    if (underscore_remaining <= 0) {
-      write(client_socket, "Ganhou", strlen("Ganhou"));
+    if (zeros_remaining <= 0) {
+      ganhou = 1;
       break;
     }
   }
-  
-  free(word);
+
+  if (ganhou == 1) {
+    write(client_socket, "ganhou", sizeof(char) * 7);
+  } else {
+    write(client_socket, "perdeu", sizeof(char) * 7);
+  }
+
+  int v = 0;
+  send(client_socket, &game_pieces, sizeof(char) * 1024, 0);
+  validate(recv(client_socket, &v, 1, 0), "[-]Erro em recv\n");
 
   printf("Fechando conexão");
   close(client_socket);
 }
 
-void init_underscored(char* underscored, char* word, int size) {
-  for (int i = 0; i < size; i++) {
-    if (word[i] == ' ') {
-      underscored[i] = ' ';  
-    } else {
-      underscored[i] = '_';
-    }
-  }
-  underscored[size + 1] = '\0';
-}
-
 int validate(int exp, const char *message) {
-  if (exp == SOCKET_ERROR) {
+  if (exp <= SOCKET_ERROR) {
     perror(message);
     exit(1);
   }
