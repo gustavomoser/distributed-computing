@@ -21,7 +21,7 @@ int main()
   validate(sock = socket(AF_INET, SOCK_STREAM, 0), "Falha ao criar socket");
   
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_addr.s_addr = INADDR_ANY;
   addr.sin_port = htons(SERVER_PORT);
 
   validate(connect(sock, (struct sockaddr*) &addr, sizeof(addr)), "Falha ao conectar");

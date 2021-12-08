@@ -17,7 +17,7 @@ char *words[8] = {"computador\0", "paralela\0", "distribuida\0", "concorrencia\0
 char *body_pieces[5] = {"cabeca\0", "bracos\0", "tronco\0", "pernas\0", "pes\0"};
 
 int validate(int exp, const char *message);
-void handle_connection(int client_socket);
+void* handle_connection(void* client_socket);
 
 int main() {
   int server_socket, client_socket, client_addr_size;
@@ -26,7 +26,7 @@ int main() {
   validate(server_socket = socket(AF_INET, SOCK_STREAM, 0), "[-]Falha ao criar socket");
 
   server_addr.sin_family = AF_INET;
-  server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  server_addr.sin_addr.s_addr = INADDR_ANY;
   server_addr.sin_port = htons(SERVER_PORT);
 
   validate(bind(server_socket, (struct sockaddr*) &server_addr, sizeof(server_addr)), "[-]Bind falhou");
@@ -40,13 +40,22 @@ int main() {
     validate(client_socket, "[-]Falha ao aceitar conexão");
     printf("[+]Servidor conectado!\n");
 
-    handle_connection(client_socket);
+    pthread_t thread_id;
+
+    int* cli_ptr = malloc(sizeof(int));
+    *cli_ptr = client_socket;
+
+    pthread_create(&thread_id, NULL, handle_connection, cli_ptr);
+    pthread_join(thread_id, NULL);
   }
 
   return 0;
 }
 
-void handle_connection(int client_socket) {
+void* handle_connection(void* cli_sock) {
+  int client_socket = *((int*)cli_sock);
+  free(cli_sock);
+
   printf("[+]Escolhendo palavra...\n");
   srandom(time(NULL));
   char* word = words[random() % 8];
@@ -124,8 +133,9 @@ void handle_connection(int client_socket) {
   send(client_socket, &game_pieces, sizeof(char) * 1024, 0);
   validate(recv(client_socket, &v, 1, 0), "[-]Erro em recv\n");
 
-  printf("Fechando conexão");
+  printf("[+]Fechando conexão\n");
   close(client_socket);
+  return NULL;
 }
 
 int validate(int exp, const char *message) {
