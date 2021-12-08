@@ -18,7 +18,7 @@ int main()
   int sock, addr_size;
   struct sockaddr_in addr;
   
-  validate(sock = socket(AF_INET, SOCK_STREAM, 0), "Falha ao criar socket");
+  validate(sock = socket(AF_INET, SOCK_STREAM, 0), "[-]Falha ao criar socket");
   
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = INADDR_ANY;
@@ -27,6 +27,11 @@ int main()
   validate(connect(sock, (struct sockaddr*) &addr, sizeof(addr)), "Falha ao conectar");
 
   puts("Jogo da forca :D");
+
+  int word_size = 0;
+  recv(sock, &word_size, sizeof(int), 0);
+
+  printf("Tamanho da palavra: %d\n", ntohl(word_size));
 
   char ch;
 

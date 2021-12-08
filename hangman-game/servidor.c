@@ -12,8 +12,10 @@
 #define SERVER_PORT 6543
 #define SOCKET_ERROR (-1)
 #define NUM_BODY_PIECES 5
+#define NUM_THREADS 5
 
-char *words[8] = {"computador\0", "paralela\0", "distribuida\0", "concorrencia\0", "servidor\0", "cliente\0", "ciencia\0", "computacao\0" };
+char *words[8] = {"computador\0", "paralela\0", "distribuida\0", "concorrencia\0", 
+  "servidor\0", "cliente\0", "ciencia\0", "computacao\0" };
 char *body_pieces[5] = {"cabeca\0", "bracos\0", "tronco\0", "pernas\0", "pes\0"};
 
 int validate(int exp, const char *message);
@@ -34,19 +36,23 @@ int main() {
   listen(server_socket, 5);
   printf("[+]Servidor disponível na porta %d\n", SERVER_PORT);
 
-  while (1) {
+  pthread_t thread[5];
+
+  for (int i = 0; i < NUM_THREADS; i++) {
     client_addr_size = sizeof(client_addr);
     client_socket = accept(server_socket, (struct sockaddr*) &client_addr, &client_addr_size);
     validate(client_socket, "[-]Falha ao aceitar conexão");
-    printf("[+]Servidor conectado!\n");
-
-    pthread_t thread_id;
+    printf("[+]Conexao em %d estabelecida!\n", i);
 
     int* cli_ptr = malloc(sizeof(int));
     *cli_ptr = client_socket;
 
-    pthread_create(&thread_id, NULL, handle_connection, cli_ptr);
-    pthread_join(thread_id, NULL);
+    printf("[+]Executando thread %d\n", i);
+    pthread_create(&thread[i], NULL, handle_connection, cli_ptr);
+  }
+
+  for (int i = 0; i < NUM_THREADS; i++) {
+    pthread_join(thread[i], NULL);
   }
 
   return 0;
@@ -68,6 +74,12 @@ void* handle_connection(void* cli_sock) {
   }
   
   printf("[+]Palavra escolhida: %s\n", word);
+
+  int cvtd = htonl(word_size);
+  send(client_socket, &cvtd, sizeof(cvtd), 0);
+  
+  printf("[+]Tamanho da palavra: %d\n", word_size);
+
   char read_ch;
   int game_piece_count = 0;
   char game_pieces[1024];
